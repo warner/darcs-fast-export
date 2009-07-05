@@ -278,6 +278,14 @@ upd_file_darcs()
 	cd ..
 }
 
+rm_file_darcs()
+{
+	cd $1
+	rm $2
+	_drrec -a -m "deleted '$2'"
+	cd ..
+}
+
 upd_file_git()
 {
 	cd $1

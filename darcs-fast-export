@@ -264,7 +264,6 @@ if not len(import_marks):
 	progress("starting export, repo has %d patches" % patchnum)
 else:
 	progress("continuing export, %d patches to convert" % patchnum)
-paths = []
 for i in patches:
 	# apply the patch
 	hash = i.attributes['hash'].value
@@ -295,15 +294,12 @@ for i in patches:
 	if markcount > 1:
 		print "from :%s" % (markcount-1)
 	# export the files
-	for j in paths:
-		print "D %s" % j
-	paths = []
+	print "deleteall"
 	for (root, dirs, files) in os.walk ("."):
 		for f in files:
 			j = os.path.normpath(os.path.join(root, f))
 			if j.startswith("_darcs") or "-darcs-backup" in j:
 				continue
-			paths.append(j)
 			sock = open(j)
 			buf = sock.read()
 			sock.close()
