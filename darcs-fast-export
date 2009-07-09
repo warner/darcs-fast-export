@@ -243,6 +243,45 @@ else:
 	os.chdir(working)
 if options.import_marks:
 	sock = os.popen("darcs pull -a --match 'hash %s' %s" % (import_marks[-1], origin))
+	# note that this only pulls in one patch, not others that might sit
+	# before it. I think it was intended to update the --working repo up
+	# to the point we were at after the previous dfe run. This will fail
+	# if we've pushed (git-to-darcs) more than one non-interdependent
+	# patch since the last pull (darcs-to-git): this will pull the latest
+	# one, but not the ones before that.
+	#  start:
+	#   darcs=AB, --working=AB, git=AB, import_marks[-1]=B
+	#  add C,D to git
+	#   darcs=AB, --working=AB, git=ABCD, import_marks[-1]=B
+	#  push git-to-darcs (git-fast-export|darcs-fast-import), pushes C+D
+	#   darcs=ABCD, --working=AB, git=ABCD, import_marks[-1]=D
+	#  add E to darcs
+	#   darcs=ABCDE, --working=AB, git=ABCD, import_marks[-1]=D
+	#  pull darcs-to-git (darcs-fast-export|git-fast-import)
+	#   this 'darcs pull' pulls D (the last thing pushed to darcs)
+	#   darcs=ABCDE, --working=ABD, git=ABCD, import_marks[-1]=D
+	#   then send/apply E
+	#   darcs=ABCDE, --working=ABDE, git=ABCD, import_marks[-1]=D
+	#   then the state of all files are copied into git state E, reverting
+	#    the D-provided git patch (so git[E] = A+B+C+E = darcs[E]-D)
+	#   darcs=ABCDE, --working=ABDE, git=ABCE, import_marks[-1]=E
+
+	# really, we want to keep the --working repo up to date. To do that
+	# on just the darcs-to-git direction is tricky. We need to know not
+	# only the last entry in import_marks[], but every entry that was
+	# added by git-to-darcs since the last time we updated this repo.
+
+	# one possibility is to record the mark number of import_marks[-1] at
+	# the end of darcs darcs-to-git run. Then, at the begnning of the
+	# next run, find everything that's listed past that. None of these
+	# should be in the --working repo yet: they all came from git and
+	# were sent over to darcs by git-to-darcs. Pull all of those into
+	# --working; now this repo is up-to-date. Then, check to see what the
+	# darcs repo has for us, and apply+transfer them one at a time.
+	# Update import_marks at the end of this process.
+	#
+	# store the number.. somewhere.
+
 	log("Building/updating working directory:\n%s" % sock.read())
 	sock.close()
 
