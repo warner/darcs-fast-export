@@ -72,6 +72,8 @@ def get_patchname(patch):
 		for i in lines[0].childNodes[0].data.split('\n'):
 			if not i.startswith("Ignore-this: "):
 				ret.append(i)
+	if len(ret) > 1:
+		ret.insert(1, u"")
 	return "\n".join(ret).encode('utf-8')
 
 def get_author(patch):
